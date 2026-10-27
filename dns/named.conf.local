@@ -3,18 +3,36 @@ key "tsig-ns2" {
     secret "dGVzdHNlY3JldGtleWZvcm5zMjQ1Ng=="; 
 };
 
-zone "lasalle.internal" {
-    type master;
-    file "/proyecto/dns/zonas/db.lasalle.internal";
-    allow-update { none; };
-    allow-transfer { key tsig-ns2; };
-    also-notify { 10.20.0.3; };
+acl "internos" {
+    10.20.0.0/24;
+    127.0.0.1;
 };
 
-zone "20.0.10.in-addr.arpa" {
-    type master;
-    file "/proyecto/dns/zonas/db.20.0.10";
-    allow-update { none; };
-    allow-transfer { key tsig-ns2; };
-    also-notify { 10.20.0.3; };
+view "interna" {
+    match-clients { internos; };
+    
+    zone "lasalle.internal" {
+        type master;
+        file "/proyecto/dns/zonas/db.lasalle.internal";
+        allow-update { none; };
+        allow-transfer { key tsig-ns2; };
+        also-notify { 10.20.0.3; };
+    };
+
+    zone "20.0.10.in-addr.arpa" {
+        type master;
+        file "/proyecto/dns/zonas/db.20.0.10";
+        allow-update { none; };
+        allow-transfer { key tsig-ns2; };
+        also-notify { 10.20.0.3; };
+    };
+};
+
+view "externa" {
+    match-clients { any; };
+    
+    zone "lasalle.internal" {
+        type master;
+        file "/proyecto/dns/zonas/db.externa";
+    };
 };
