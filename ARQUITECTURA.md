@@ -1,78 +1,31 @@
-\# ARQUITECTURA — Los Rezagados (Colegio La Salle)
+# Arquitectura propuesta — Los Rezagados (Colegio La Salle)
 
+## Plan de nombres
+| Zona | Tipo | Quién la ve | Dónde vive |
+|---|---|---|---|
+| `lasalle.internal` | interna | solo la red de la organización (vista interna) | ns1 (primario) + ns2 (secundario TSIG) |
+| `lasallesantacruz.net` | pública | internet (vista externa, firmada con DNSSEC) | ns1 + DNSControl |
+| `20.0.10.in-addr.arpa` | inversa | red interna | ns1 + ns2 |
 
+## Plan de direcciones (laboratorio)
+| Nodo | IP interna | Función |
+|---|---|---|
+| ns1 | 10.20.0.2 (+ 172.31.0.2 pública) | DNS autoritativo primario, vistas, DNSSEC |
+| ns2 | 10.20.0.3 | DNS secundario |
+| resolutor | 10.20.0.4 | Unbound: caché, DoT, RPZ |
+| web | 10.20.0.20 | Nginx + HTTPS (+ aplicación si aplica) |
+| mail | 10.20.0.25 | Postfix + Dovecot + OpenDKIM |
+| cliente | 10.20.0.50 | PC de la organización (pruebas y auditoría) |
+| externo | 172.31.0.100 | "internet" (pruebas de la vista externa) |
 
-\## 1. Plan de Nombres (Zonas DNS)
+## Diagrama
+(Dibujar: redes, nodos, flujos de DNS, web, SSH y correo; qué puertos abre el firewall.)
 
-\- \*\*Zona interna:\*\* `lasalle.internal` (para la red local)
-
-\- \*\*Zona inversa:\*\* `20.30.10.in-addr.arpa` (para traducir IPs a nombres)
-
-\- \*\*Zona pública:\*\* `lasallesantacruz.net` (simulada en el laboratorio)
-
-
-
-\## 2. Diagrama y Direccionamiento de Red
-
-
-
-La red base será `10.30.20.0/24` con los siguientes 7 nodos:
-
-
-
-| Nodo | Rol | IP Fija | Puertos expuestos |
-
-| :--- | :--- | :--- | :--- |
-
-| \*\*ns1\*\* | DNS Primario (BIND) | 10.30.20.11 | 53/udp, 53/tcp |
-
-| \*\*ns2\*\* | DNS Secundario (BIND) | 10.30.20.12 | 53/udp, 53/tcp |
-
-| \*\*resolver\*\*| Resolutor (Unbound) | 10.30.20.13 | 53/udp, 53/tcp, 853/tcp |
-
-| \*\*web\*\* | Servidor Web (Nginx) | 10.30.20.21 | 80/tcp, 443/tcp |
-
-| \*\*correo\*\* | Servidor Correo | 10.30.20.31 | 25, 587, 993 |
-
-| \*\*bastion\*\*| Acceso SSH | 10.30.20.40 | 22/tcp |
-
-| \*\*cliente\*\*| Cliente de pruebas | 10.30.20.50 | (sin puertos abiertos) |
-
-
-
-\*(Aquí irá una imagen del diagrama cuando lo tengamos en Docker)\*
-
-
-
-\## 3. Decisiones Justificadas
-
-
-
-1\. \*\*Uso de la zona `.internal` para la red interna.\*\*
-
-&#x20;  \*Justificación:\* El dominio `.internal` está reservado por la ICANN para redes privadas. Evita colisiones con dominios reales de internet y protege la topología interna de filtraciones.
-
-
-
-2\. \*\*Separación del resolutor (Unbound) del DNS autoritativo (BIND).\*\*
-
-&#x20;  \*Justificación:\* Buenas prácticas de seguridad. BIND solo atiende consultas de nuestras zonas, sin recursión. Unbound se encarga de la recursión hacia internet, aplicando seguridad extra (DoT) y filtrado de dominios (RPZ).
-
-
-
-3\. \*\*Implementación de una CA (Autoridad Certificadora) Interna.\*\*
-
-&#x20;  \*Justificación:\* Permite emitir certificados SSL/TLS propios para los servicios internos (`web.lasalle.internal`) sin depender de entidades externas, garantizando cifrado en la red local.
-
-
-
-4\. \*\*Transferencia de zona segura (TSIG y NOTIFY) entre ns1 y ns2.\*\*
-
-&#x20;  \*Justificación:\* TSIG (Transaction SIGnatures) autentica que solo ns1 puede enviar actualizaciones a ns2. NOTIFY asegura que los cambios se propaguen en segundos, garantizando alta disponibilidad.
-
-
-
-5\. \*\*Uso de Vistas (Views) en BIND para separar tráfico interno y externo.\*\*
-
-&#x20;  \*Justificación:\* Las vistas permiten que el servidor DNS responda con diferentes IPs dependiendo de quién pregunta. Protege la red interna mostrando solo información pública a consultas externas.
-
+## Decisiones y su justificación (mínimo 5)
+| Decisión | Alternativas consideradas | Por qué |
+|---|---|---|
+| Usar red `.internal` | Dominio público inventado | Evita colisiones, oculta topología interna |
+| Separar Unbound de BIND | Usar BIND para todo | BIND es autoritativo; Unbound es recursivo y aplica RPZ/DoT |
+| Usar Vistas (Views) | Una sola zona para todos | Separa el tráfico de la organización del tráfico de internet |
+| Secundario con TSIG | Transferencia abierta | Seguridad: solo ns1 puede actualizar a ns2 |
+| Firmar con DNSSEC | Solo HTTPS | Protege la integridad del DNS contra ataques de envenenamiento |

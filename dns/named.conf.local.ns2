@@ -1,0 +1,18 @@
+key "tsig-ns2" {
+    algorithm hmac-sha256;
+    secret "dGVzdHNlY3JldGtleWZvcm5zMjQ1Ng==";
+};
+
+zone "lasalle.internal" {
+    type secondary;
+    file "/proyecto/dns/zonas/db.lasalle.internal.slave";
+    masters { 10.20.0.2 key tsig-ns2; };
+    allow-notify { 10.20.0.2; };
+};
+
+zone "20.0.10.in-addr.arpa" {
+    type secondary;
+    file "/proyecto/dns/zonas/db.20.0.10.slave";
+    masters { 10.20.0.2 key tsig-ns2; };
+    allow-notify { 10.20.0.2; };
+};

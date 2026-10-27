@@ -1,0 +1,15 @@
+options {
+    directory "/var/cache/bind";
+
+    // Ocultar la versión de BIND
+    version "oculta";
+
+    // Desactivar la recursión (BIND solo responde por nuestras zonas)
+    recursion no;
+
+    // Opcional: permitir consultas solo desde la red interna
+    allow-query { localhost; 10.20.0.0/24; };
+
+    // Opcional: desactivar transferencias de zona no autorizadas
+    allow-transfer { none; };
+};
