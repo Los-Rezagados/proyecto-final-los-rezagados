@@ -35,4 +35,11 @@ view "externa" {
         type master;
         file "/proyecto/dns/zonas/db.externa";
     };
+     zone "lasallesantacruz.net" {
+        type master;
+        file "/proyecto/dns/zonas/db.lasallesantacruz.net";
+        dnssec-policy default;
+        inline-signing yes;
+        allow-query { any; };
+    };
 };
